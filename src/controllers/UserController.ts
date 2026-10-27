@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as UserRepository from "@repositories/UserRepository";
+import { logger } from "../services/Logger";
 
 // O controller recebe a requisição, valida os dados, chama o repository
 // e decide qual status HTTP e qual corpo devolver.
@@ -24,7 +25,7 @@ export const createUser = async (req: Request, res: Response) => {
     // 201 Created: algo novo foi criado
     return res.status(201).json(user);
   } catch (error) {
-    console.error(error);
+    logger.error("Error creating user", error);
     // 500 Internal Server Error: o problema foi nosso, não do cliente
     return res.status(500).json({ message: "Erro ao criar usuário." });
   }
@@ -36,7 +37,7 @@ export const readAllUsers = async (req: Request, res: Response) => {
 
     return res.status(200).json(users);
   } catch (error) {
-    console.error(error);
+    logger.error("Error reading users", error);
     return res.status(500).json({ message: "Erro ao buscar usuários." });
   }
 };
@@ -55,7 +56,7 @@ export const readUserById = async (req: Request, res: Response) => {
 
     return res.status(200).json(user);
   } catch (error) {
-    console.error(error);
+    logger.error("Error reading user", error, { id: req.params.id });
     return res.status(500).json({ message: "Erro ao buscar usuário." });
   }
 };
@@ -81,7 +82,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     return res.status(200).json(updatedUser);
   } catch (error) {
-    console.error(error);
+    logger.error("Error updating user", error, { id: req.params.id });
     return res.status(500).json({ message: "Erro ao atualizar usuário." });
   }
 };
@@ -101,7 +102,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     // 204 No Content: deu certo e não há nada para devolver
     return res.status(204).send();
   } catch (error) {
-    console.error(error);
+    logger.error("Error deleting user", error, { id: req.params.id });
     return res.status(500).json({ message: "Erro ao deletar usuário." });
   }
 };
