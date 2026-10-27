@@ -1,14 +1,15 @@
 import { PrismaClient } from "@prisma/client";
+import { logger } from "../services/Logger";
 
 const prisma = new PrismaClient();
 
 prisma
   .$connect()
   .then(() => {
-    console.log("📦 Successfully connected with database");
+    logger.info("Successfully connected to database");
   })
   .catch((error) => {
-    console.log("❌ Error connecting to database", error);
+    logger.error("Error connecting to database", error);
   });
 
 export default prisma;
