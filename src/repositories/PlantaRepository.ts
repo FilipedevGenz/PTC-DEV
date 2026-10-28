@@ -28,14 +28,23 @@ export const findPlantaByName = async (name: string) => {
     });
 };
 
-export const updateUser = async (id: number, data: Prisma.PlantaUpdateInput) => {
+export const updateEstoquePlanta = async (id: number, amount: number) => {
+    return await prisma.planta.update({
+        where: { id: id },
+        data:{
+            estoque: {increment: amount}
+        }
+    });
+}
+
+export const updatePlanta = async (id: number, data: Prisma.PlantaUpdateInput) => {
     return await prisma.planta.update({
         where: { id: id },
         data: data,
     });
 };
 
-export const deleteUser = async (id: number) => {
+export const deletePlanta = async (id: number) => {
     return await prisma.planta.delete({
         where: { id: id }
     });
