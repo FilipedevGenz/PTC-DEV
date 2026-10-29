@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import * as UserRepository from "@repositories/UserRepository";
-import { logger } from "../services/Logger";
+import { logger } from "../infra/Logger";
 
 // O controller recebe a requisição, valida os dados, chama o repository
 // e decide qual status HTTP e qual corpo devolver.
