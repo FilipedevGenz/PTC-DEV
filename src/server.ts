@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import routes from "./routes";
-import { logger } from "./services/Logger";
+import { logger } from "./infra/Logger";
 
 const app = express();
 
