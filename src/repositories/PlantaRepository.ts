@@ -1,0 +1,64 @@
+import {Prisma} from "@prisma/client";
+import prisma from "@database";
+
+export const createPlanta = async (data: Prisma.PlantaCreateInput) => {
+    return await prisma.planta.create({
+        data: data,
+    });
+};
+
+export const findAllPlantas = async () => {
+    return await prisma.planta.findMany();
+};
+
+export const findPlantaById = async (id: number) => {
+    return await prisma.planta.findUnique({
+        where: { id: id }
+    });
+};
+
+export const findPlantaByName = async (name: string) => {
+    return await prisma.planta.findFirst({
+        where: {
+            nome: {
+                equals: name,
+                mode: "insensitive"
+            }
+        }
+    });
+};
+
+export const updateEstoquePlanta = async (id: number, amount: number) => {
+    const result = await prisma.planta.updateMany({
+        where: { id },
+            data: {
+                estoque: { increment: amount }
+            }
+        });
+
+        if (result.count === 0) return null;
+
+        return await prisma.planta.findUnique({
+            where: { id }
+        });
+    }
+
+export const updatePlanta = async (id: number, data: Prisma.PlantaUpdateInput) => {
+    return await prisma.planta.updateMany({
+        where: { id: id },
+        data: data,
+    });
+};
+
+export const deletePlanta = async (id: number) => {
+    return await prisma.planta.deleteMany({
+        where: { id: id }
+    });
+};
+
+export const getValorTotalEstoque = async (): Promise<number> => {
+    const plantas = await prisma.planta.findMany({
+        select: { valor: true, estoque: true },
+    });
+    return plantas.reduce((somatorio, planta) => somatorio + planta.valor * planta.estoque, 0);
+};
