@@ -1,10 +1,9 @@
 import * as PlantaRepository from "../repositories/PlantaRepository"
 import { logger } from "../infra/Logger"
-import {Planta, Prisma} from "@prisma/client";
-import {Result, PlantaErrors, err, ok} from "../types/type"
-import prisma from "@database";
+import { Planta, Prisma } from "@prisma/client";
+import { Result, PlantaErrors, err, ok } from "../types/type"
 
-export const createPlanta = async (planta:Prisma.PlantaCreateInput): Promise<Result<Planta,PlantaErrors>> => {
+export const createPlanta = async (planta: Prisma.PlantaCreateInput): Promise<Result<Planta, PlantaErrors>> => {
     try {
         logger.info("Creating Planta");
         const toReturnPlanta = await PlantaRepository.createPlanta(planta);
@@ -17,7 +16,20 @@ export const createPlanta = async (planta:Prisma.PlantaCreateInput): Promise<Res
     }
 }
 
-export const getPlanta = async (id: number): Promise<Result<Planta,PlantaErrors>> => {
+export const getAllPlantas = async (): Promise<Result<Planta[], PlantaErrors>> => {
+    try {
+        logger.info("trying to find all plantas");
+        const plantas = await PlantaRepository.findAllPlantas();
+        logger.info("could find all plantas");
+        return ok(plantas);
+    }
+    catch (error) {
+        logger.error("Error finding all Plantas:", error);
+        throw error;
+    }
+}
+
+export const getPlanta = async (id: number): Promise<Result<Planta, PlantaErrors>> => {
     try {
         logger.info("trying to find planta");
         const toReturnPlanta = await PlantaRepository.findPlantaById(id)
@@ -29,17 +41,22 @@ export const getPlanta = async (id: number): Promise<Result<Planta,PlantaErrors>
         return ok(toReturnPlanta);
     }
     catch (error) {
-        logger.error("Error creating Planta: ", error);
+        logger.error("Error finding Planta: ", error);
         throw error;
     }
 }
 
-export const updatePlanta = async (id: number, planta: Planta): Promise<Result<Planta,PlantaErrors>>  => {
+export const updatePlanta = async (id: number, planta: Prisma.PlantaUpdateInput): Promise<Result<Planta, PlantaErrors>> => {
     try {
         logger.info("trying to update Planta");
-        const count = await PlantaRepository.updatePlanta(id, planta);
-        const toReturn = await PlantaRepository.findPlantaById(id)
-        if (count.count === 0 || !toReturn) {
+        const existingPlanta = await PlantaRepository.findPlantaById(id);
+        if (!existingPlanta) {
+            logger.error("Could not find Planta");
+            return err("NOT_FOUND");
+        }
+        await PlantaRepository.updatePlanta(id, planta);
+        const toReturn = await PlantaRepository.findPlantaById(id);
+        if (!toReturn) {
             logger.error("Could not find Planta");
             return err("NOT_FOUND");
         }
@@ -52,14 +69,16 @@ export const updatePlanta = async (id: number, planta: Planta): Promise<Result<P
     }
 }
 
-export const deletePlanta = async (id: number): Promise<Result<null,PlantaErrors>>  => {
+export const deletePlanta = async (id: number): Promise<Result<null, PlantaErrors>> => {
     try {
-        logger.info("trying to delete Planta");
-        const count = await PlantaRepository.deletePlanta(id);
-        if (count.count === 0) {
+        logger.info("trying to delete planta");
+        const existingPlanta = await PlantaRepository.findPlantaById(id);
+        if (!existingPlanta) {
             logger.error("Could not find Planta with this Id: " + id);
             return err("NOT_FOUND");
         }
+        await PlantaRepository.deletePlanta(id);
+        logger.info("could delete Planta");
         return ok(null);
     }
     catch (error) {
@@ -68,15 +87,19 @@ export const deletePlanta = async (id: number): Promise<Result<null,PlantaErrors
     }
 }
 
-export const updateEstoque = async (id: number, amount: number): Promise<Result<Planta,PlantaErrors>> => {
+export const updateEstoque = async (id: number, quantidade: number): Promise<Result<Planta, PlantaErrors>> => {
     try {
         logger.info("trying to update Estoque");
         const planta = await PlantaRepository.findPlantaById(id)
-        if (planta && planta.estoque - amount < 0) {
+        if (!planta) {
+            logger.error("Could not find a Planta with this Id " + id);
+            return err("NOT_FOUND")
+        }
+        if (planta.estoque < quantidade) {
             logger.error("Could not subtract stock");
             return err("INSUFFICIENT_STOCK");
         }
-        const updatedPlanta = await PlantaRepository.updateEstoquePlanta(id, amount);
+        const updatedPlanta = await PlantaRepository.updateEstoquePlanta(id, -quantidade);
         if (updatedPlanta === null) {
             logger.error("Could not find a Planta with this Id " + id);
             return err("NOT_FOUND")
@@ -90,13 +113,31 @@ export const updateEstoque = async (id: number, amount: number): Promise<Result<
     }
 }
 
-export const getAllValue = async ()=>{
+export const getAllValue = async () => {
     try {
         logger.info("trying to get all values");
         return PlantaRepository.getValorTotalEstoque();
     }
     catch (error) {
-        logger.error("Error deleting Planta");
+        logger.error("Error getting all values:", error);
+        throw error;
+    }
+}
+
+export const getResumoEstoque = async (): Promise<Result<{ valorTotalEmCentavos: number; totalDeVasos: number }, PlantaErrors>> => {
+    try {
+        logger.info("trying to get stock summary");
+        const plantas = await PlantaRepository.findAllPlantas();
+        const resumo = plantas.reduce((acumulado, planta) => ({
+                valorTotalEmCentavos: acumulado.valorTotalEmCentavos + planta.valor * planta.estoque,
+                totalDeVasos: acumulado.totalDeVasos + planta.estoque,}),
+                { valorTotalEmCentavos: 0, totalDeVasos: 0 }
+        );
+        logger.info("could get stock summary");
+        return ok(resumo);
+    }
+    catch (error) {
+        logger.error("Error getting stock summary:", error);
         throw error;
     }
 }
