@@ -39,5 +39,5 @@ model Planta {
 enum Luminosidade {
   SOMBRA
   MEIA_SOMBRA
-  SOL_PLENO2
+  SOL_PLENO
 }
