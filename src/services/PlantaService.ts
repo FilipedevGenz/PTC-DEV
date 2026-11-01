@@ -93,19 +93,15 @@ export const deletePlanta = async (id: number): Promise<Result<null, PlantaError
 export const updateEstoque = async (id: number, quantidade: number): Promise<Result<Planta, PlantaErrors>> => {
     try {
         logger.info("trying to update Estoque");
-        const planta = await PlantaRepository.findPlantaById(id)
-        if (!planta) {
-            logger.error("Could not find a Planta with this Id " + id);
-            return err("NOT_FOUND")
-        }
-        if (planta.estoque < quantidade) {
+        const updatedPlanta = await PlantaRepository.decrementEstoquePlanta(id, quantidade);
+        if (updatedPlanta === null) {
+            const planta = await PlantaRepository.findPlantaById(id);
+            if (!planta) {
+                logger.error("Could not find a Planta with this Id " + id);
+                return err("NOT_FOUND")
+            }
             logger.error("Could not subtract stock");
             return err("INSUFFICIENT_STOCK");
-        }
-        const updatedPlanta = await PlantaRepository.updateEstoquePlanta(id, -quantidade);
-        if (updatedPlanta === null) {
-            logger.error("Could not find a Planta with this Id " + id);
-            return err("NOT_FOUND")
         }
         logger.info("Could update Estoque");
         return ok(updatedPlanta);

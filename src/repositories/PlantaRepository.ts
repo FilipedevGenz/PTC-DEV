@@ -34,20 +34,23 @@ export const findPlantaByName = async (name: string) => {
     });
 };
 
-export const updateEstoquePlanta = async (id: number, amount: number) => {
+export const decrementEstoquePlanta = async (id: number, amount: number) => {
     const result = await prisma.planta.updateMany({
-        where: { id },
-            data: {
-                estoque: { increment: amount }
-            }
-        });
+        where: {
+            id: id,
+            estoque: { gte: amount },
+        },
+        data: {
+            estoque: { decrement: amount }
+        }
+    });
 
-        if (result.count === 0) return null;
+    if (result.count === 0) return null;
 
-        return await prisma.planta.findUnique({
-            where: { id }
-        });
-    }
+    return await prisma.planta.findUnique({
+        where: { id: id }
+    });
+};
 
 export const updatePlanta = async (id: number, data: Prisma.PlantaUpdateInput) => {
     return await prisma.planta.updateMany({

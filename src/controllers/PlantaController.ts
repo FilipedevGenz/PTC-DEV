@@ -251,17 +251,15 @@ export const venderPlanta = async (req: Request, res: Response) => {
                 message: "A quantidade deve ser um número inteiro maior que zero.",
             });
         }
-        const plantaResult = await PlantaService.getPlanta(id);
-        if (!plantaResult.ok) {
-            return erroPlanta(res, plantaResult.error);
-        }
-        if (plantaResult.data.estoque < quantidade) {
-            return res.status(400).json({
-                message: "Temos só " + plantaResult.data.estoque + " vasos em estoque.",
-            });
-        }
         const resultado = await PlantaService.updateEstoque(id, quantidade);
         if (!resultado.ok) {
+            if (resultado.error === "INSUFFICIENT_STOCK") {
+                const plantaAtual = await PlantaService.getPlanta(id);
+                const estoqueAtual = plantaAtual.ok ? plantaAtual.data.estoque : 0;
+                return res.status(400).json({
+                    message: "Temos só " + estoqueAtual + " vasos em estoque.",
+                });
+            }
             return erroPlanta(res, resultado.error);
         }
         return res.status(200).json(resultado.data);
