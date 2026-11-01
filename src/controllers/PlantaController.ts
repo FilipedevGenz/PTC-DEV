@@ -17,6 +17,7 @@ const CAMPOS_OBRIGATORIOS = [
 ] as const;
 
 const LUMINOSIDADES_VALIDAS: string[] = Object.values(Luminosidade);
+const ORDENS_VALIDAS: string[] = ["preco", "nome"];
 
 const validarCampos = (body: CorpoPlanta, exigirTodos: boolean): string | null => {
     if (exigirTodos) {
@@ -71,7 +72,7 @@ const montarDadosPlanta = (body: CorpoPlanta): Prisma.PlantaUpdateInput => {
 };
 
 const montarFiltros = (query: Request["query"]): Prisma.PlantaWhereInput => {
-    const { luminosidade, petFriendly } = query;
+    const { luminosidade, petFriendly, nome } = query;
     const where: Prisma.PlantaWhereInput = {};
     if (luminosidade !== undefined) {
         where.luminosidade = luminosidade as Luminosidade;
@@ -79,7 +80,21 @@ const montarFiltros = (query: Request["query"]): Prisma.PlantaWhereInput => {
     if (petFriendly !== undefined) {
         where.petFriendly = petFriendly === "true";
     }
+    if (nome !== undefined) {
+        where.nome = { contains: nome as string, mode: "insensitive" };
+    }
     return where;
+};
+
+const montarOrdenacao = (ordem: unknown): Prisma.PlantaOrderByWithRelationInput | undefined => {
+    switch (ordem) {
+        case "preco":
+            return { preco: "asc" };
+        case "nome":
+            return { nome: "asc" };
+        default:
+            return undefined;
+    }
 };
 
 const lerId = (req: Request): number | null => {
@@ -115,7 +130,7 @@ export const createPlanta = async (req: Request, res: Response) => {
 
 export const readAllPlantas = async (req: Request, res: Response) => {
     try {
-        const { luminosidade, petFriendly } = req.query;
+        const { luminosidade, petFriendly, nome, ordem } = req.query;
         switch (true) {
             case luminosidade !== undefined && (typeof luminosidade !== "string" || !LUMINOSIDADES_VALIDAS.includes(luminosidade)):
                 return res.status(400).json({
@@ -125,8 +140,16 @@ export const readAllPlantas = async (req: Request, res: Response) => {
                 return res.status(400).json({
                     message: "petFriendly deve ser true ou false.",
                 });
+            case nome !== undefined && typeof nome !== "string":
+                return res.status(400).json({
+                    message: "O nome deve ser um texto.",
+                });
+            case ordem !== undefined && (typeof ordem !== "string" || !ORDENS_VALIDAS.includes(ordem)):
+                return res.status(400).json({
+                    message: "Ordem inválida. Use " + ORDENS_VALIDAS.join(" ou ") + ".",
+                });
         }
-        const resultado = await PlantaService.getAllPlantas(montarFiltros(req.query));
+        const resultado = await PlantaService.getAllPlantas(montarFiltros(req.query), montarOrdenacao(ordem));
         if (!resultado.ok) {
             return erroPlanta(res, resultado.error);
         }
