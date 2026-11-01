@@ -16,10 +16,13 @@ export const createPlanta = async (planta: Prisma.PlantaCreateInput): Promise<Re
     }
 }
 
-export const getAllPlantas = async (): Promise<Result<Planta[], PlantaErrors>> => {
+export const getAllPlantas = async (
+    where?: Prisma.PlantaWhereInput,
+    orderBy?: Prisma.PlantaOrderByWithRelationInput
+): Promise<Result<Planta[], PlantaErrors>> => {
     try {
         logger.info("trying to find all plantas");
-        const plantas = await PlantaRepository.findAllPlantas();
+        const plantas = await PlantaRepository.findAllPlantas(where, orderBy);
         logger.info("could find all plantas");
         return ok(plantas);
     }

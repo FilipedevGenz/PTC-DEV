@@ -70,6 +70,18 @@ const montarDadosPlanta = (body: CorpoPlanta): Prisma.PlantaUpdateInput => {
     return data;
 };
 
+const montarFiltros = (query: Request["query"]): Prisma.PlantaWhereInput => {
+    const { luminosidade, petFriendly } = query;
+    const where: Prisma.PlantaWhereInput = {};
+    if (luminosidade !== undefined) {
+        where.luminosidade = luminosidade as Luminosidade;
+    }
+    if (petFriendly !== undefined) {
+        where.petFriendly = petFriendly === "true";
+    }
+    return where;
+};
+
 const lerId = (req: Request): number | null => {
     const id = Number(req.params.id);
     return Number.isInteger(id) && id > 0 ? id : null;
@@ -114,19 +126,11 @@ export const readAllPlantas = async (req: Request, res: Response) => {
                     message: "petFriendly deve ser true ou false.",
                 });
         }
-        const luminosidadeFiltro = luminosidade !== undefined ? luminosidade as Luminosidade : undefined;
-        const petFriendlyFiltro = petFriendly !== undefined ? petFriendly === "true" : undefined;
-        const resultado = await PlantaService.getAllPlantas();
+        const resultado = await PlantaService.getAllPlantas(montarFiltros(req.query));
         if (!resultado.ok) {
             return erroPlanta(res, resultado.error);
         }
-        const filtradas = resultado.data.filter((planta) => {
-            if (luminosidadeFiltro !== undefined && planta.luminosidade !== luminosidadeFiltro) {
-                return false;
-            }
-            return !(petFriendlyFiltro !== undefined && planta.petFriendly !== petFriendlyFiltro);
-        });
-        return res.status(200).json(filtradas);
+        return res.status(200).json(resultado.data);
     }
     catch (error) {
         logger.error("Error reading plantas", error);
@@ -136,12 +140,11 @@ export const readAllPlantas = async (req: Request, res: Response) => {
 
 export const readPlantasEsgotadas = async (req: Request, res: Response) => {
     try {
-        const resultado = await PlantaService.getAllPlantas();
+        const resultado = await PlantaService.getAllPlantas({ estoque: 0 });
         if (!resultado.ok) {
             return erroPlanta(res, resultado.error);
         }
-        const esgotadas = resultado.data.filter((planta) => planta.estoque === 0);
-        return res.status(200).json(esgotadas);
+        return res.status(200).json(resultado.data);
     }
     catch (error) {
         logger.error("Error reading esgotadas", error);
