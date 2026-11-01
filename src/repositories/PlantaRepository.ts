@@ -1,4 +1,4 @@
-import {Prisma} from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import prisma from "@database";
 
 export const createPlanta = async (data: Prisma.PlantaCreateInput) => {
@@ -58,7 +58,7 @@ export const deletePlanta = async (id: number) => {
 
 export const getValorTotalEstoque = async (): Promise<number> => {
     const plantas = await prisma.planta.findMany({
-        select: { valor: true, estoque: true },
+        select: { preco: true, estoque: true },
     });
-    return plantas.reduce((somatorio, planta) => somatorio + planta.valor * planta.estoque, 0);
+    return plantas.reduce((somatorio, planta) => somatorio + planta.preco * planta.estoque, 0);
 };

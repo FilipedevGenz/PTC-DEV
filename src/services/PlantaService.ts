@@ -129,7 +129,7 @@ export const getResumoEstoque = async (): Promise<Result<{ valorTotalEmCentavos:
         logger.info("trying to get stock summary");
         const plantas = await PlantaRepository.findAllPlantas();
         const resumo = plantas.reduce((acumulado, planta) => ({
-                valorTotalEmCentavos: acumulado.valorTotalEmCentavos + planta.valor * planta.estoque,
+                valorTotalEmCentavos: acumulado.valorTotalEmCentavos + planta.preco * planta.estoque,
                 totalDeVasos: acumulado.totalDeVasos + planta.estoque,}),
                 { valorTotalEmCentavos: 0, totalDeVasos: 0 }
         );

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Luminosidade, Planta, Prisma } from "@prisma/client";
+import { Luminosidade, Prisma } from "@prisma/client";
 import * as PlantaService from "../services/PlantaService";
 import { logger } from "../infra/Logger";
 import { PlantaErrors } from "../types/type";
@@ -18,40 +18,16 @@ const CAMPOS_OBRIGATORIOS = [
 
 const LUMINOSIDADES_VALIDAS: string[] = Object.values(Luminosidade);
 
-const extrairPreco = (body: CorpoPlanta): unknown => {
-    return body.preco !== undefined ? body.preco : body.valor;
-};
-
-const toResposta = (planta: Planta) => {
-    return {
-        id: planta.id,
-        nome: planta.nome,
-        especie: planta.especie,
-        preco: planta.valor,
-        estoque: planta.estoque,
-        luminosidade: planta.luminosidade,
-        petFriendly: planta.petFriendly,
-        regaACadaDias: planta.regaACadaDias,
-        createdAt: planta.createdAt,
-        updatedAt: planta.updatedAt,
-    };
-};
-
 const validarCampos = (body: CorpoPlanta, exigirTodos: boolean): string | null => {
     if (exigirTodos) {
-        const faltando = CAMPOS_OBRIGATORIOS.filter((campo) => {
-            if (campo === "preco") {
-                return extrairPreco(body) === undefined;
-            }
-            return body[campo] === undefined;
-        });
+        const faltando = CAMPOS_OBRIGATORIOS.filter((campo) => body[campo] === undefined);
         if (faltando.length > 0) {
             return "Preencha todos os campos: " + faltando.join(", ") + ".";
         }
     }
     const nome = body.nome;
     const especie = body.especie;
-    const preco = extrairPreco(body);
+    const preco = body.preco;
     const estoque = body.estoque;
     const luminosidade = body.luminosidade;
     const petFriendly = body.petFriendly;
@@ -78,10 +54,9 @@ const validarCampos = (body: CorpoPlanta, exigirTodos: boolean): string | null =
 
 const montarDadosPlanta = (body: CorpoPlanta): Prisma.PlantaUpdateInput => {
     const data: Prisma.PlantaUpdateInput = {};
-    const preco = extrairPreco(body);
     if (body.nome !== undefined) data.nome = body.nome as string;
     if (body.especie !== undefined) data.especie = body.especie as string;
-    if (preco !== undefined) data.valor = preco as number;
+    if (body.preco !== undefined) data.preco = body.preco as number;
     if (body.estoque !== undefined) data.estoque = body.estoque as number;
     if (body.luminosidade !== undefined) {
         data.luminosidade = body.luminosidade as Luminosidade;
@@ -118,7 +93,7 @@ export const createPlanta = async (req: Request, res: Response) => {
         if (!resultado.ok) {
             return erroPlanta(res, resultado.error);
         }
-        return res.status(201).json(toResposta(resultado.data));
+        return res.status(201).json(resultado.data);
     }
     catch (error) {
         logger.error("Error creating planta", error);
@@ -151,7 +126,7 @@ export const readAllPlantas = async (req: Request, res: Response) => {
             }
             return !(petFriendlyFiltro !== undefined && planta.petFriendly !== petFriendlyFiltro);
         });
-        return res.status(200).json(filtradas.map(toResposta));
+        return res.status(200).json(filtradas);
     }
     catch (error) {
         logger.error("Error reading plantas", error);
@@ -166,7 +141,7 @@ export const readPlantasEsgotadas = async (req: Request, res: Response) => {
             return erroPlanta(res, resultado.error);
         }
         const esgotadas = resultado.data.filter((planta) => planta.estoque === 0);
-        return res.status(200).json(esgotadas.map(toResposta));
+        return res.status(200).json(esgotadas);
     }
     catch (error) {
         logger.error("Error reading esgotadas", error);
@@ -184,7 +159,7 @@ export const readPlantaById = async (req: Request, res: Response) => {
         if (!resultado.ok) {
             return erroPlanta(res, resultado.error);
         }
-        return res.status(200).json(toResposta(resultado.data));
+        return res.status(200).json(resultado.data);
     }
     catch (error) {
         logger.error("Error reading planta", error, { id: req.params.id });
@@ -211,7 +186,7 @@ export const updatePlanta = async (req: Request, res: Response) => {
         if (!resultado.ok) {
             return erroPlanta(res, resultado.error);
         }
-        return res.status(200).json(toResposta(resultado.data));
+        return res.status(200).json(resultado.data);
     }
     catch (error) {
         logger.error("Error updating planta", error, { id: req.params.id });
@@ -263,7 +238,7 @@ export const venderPlanta = async (req: Request, res: Response) => {
         if (!resultado.ok) {
             return erroPlanta(res, resultado.error);
         }
-        return res.status(200).json(toResposta(resultado.data));
+        return res.status(200).json(resultado.data);
     }
     catch (error) {
         logger.error("Error selling planta", error, { id: req.params.id });
