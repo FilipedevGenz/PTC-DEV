@@ -1,4 +1,4 @@
-import {Prisma} from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import prisma from "@database";
 
 export const createPlanta = async (data: Prisma.PlantaCreateInput) => {
@@ -7,8 +7,14 @@ export const createPlanta = async (data: Prisma.PlantaCreateInput) => {
     });
 };
 
-export const findAllPlantas = async () => {
-    return await prisma.planta.findMany();
+export const findAllPlantas = async (
+    where?: Prisma.PlantaWhereInput,
+    orderBy?: Prisma.PlantaOrderByWithRelationInput
+) => {
+    return await prisma.planta.findMany({
+        where: where,
+        orderBy: orderBy,
+    });
 };
 
 export const findPlantaById = async (id: number) => {
@@ -28,20 +34,23 @@ export const findPlantaByName = async (name: string) => {
     });
 };
 
-export const updateEstoquePlanta = async (id: number, amount: number) => {
+export const decrementEstoquePlanta = async (id: number, amount: number) => {
     const result = await prisma.planta.updateMany({
-        where: { id },
-            data: {
-                estoque: { increment: amount }
-            }
-        });
+        where: {
+            id: id,
+            estoque: { gte: amount },
+        },
+        data: {
+            estoque: { decrement: amount }
+        }
+    });
 
-        if (result.count === 0) return null;
+    if (result.count === 0) return null;
 
-        return await prisma.planta.findUnique({
-            where: { id }
-        });
-    }
+    return await prisma.planta.findUnique({
+        where: { id: id }
+    });
+};
 
 export const updatePlanta = async (id: number, data: Prisma.PlantaUpdateInput) => {
     return await prisma.planta.updateMany({
@@ -58,7 +67,7 @@ export const deletePlanta = async (id: number) => {
 
 export const getValorTotalEstoque = async (): Promise<number> => {
     const plantas = await prisma.planta.findMany({
-        select: { valor: true, estoque: true },
+        select: { preco: true, estoque: true },
     });
-    return plantas.reduce((somatorio, planta) => somatorio + planta.valor * planta.estoque, 0);
+    return plantas.reduce((somatorio, planta) => somatorio + planta.preco * planta.estoque, 0);
 };

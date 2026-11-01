@@ -27,7 +27,7 @@ model Planta {
   id            Int          @id @default(autoincrement())
   nome          String
   especie       String
-  valor         Int
+  preco         Int
   estoque       Int
   luminosidade  Luminosidade
   petFriendly   Boolean

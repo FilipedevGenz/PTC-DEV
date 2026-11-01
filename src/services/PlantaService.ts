@@ -16,10 +16,13 @@ export const createPlanta = async (planta: Prisma.PlantaCreateInput): Promise<Re
     }
 }
 
-export const getAllPlantas = async (): Promise<Result<Planta[], PlantaErrors>> => {
+export const getAllPlantas = async (
+    where?: Prisma.PlantaWhereInput,
+    orderBy?: Prisma.PlantaOrderByWithRelationInput
+): Promise<Result<Planta[], PlantaErrors>> => {
     try {
         logger.info("trying to find all plantas");
-        const plantas = await PlantaRepository.findAllPlantas();
+        const plantas = await PlantaRepository.findAllPlantas(where, orderBy);
         logger.info("could find all plantas");
         return ok(plantas);
     }
@@ -90,19 +93,15 @@ export const deletePlanta = async (id: number): Promise<Result<null, PlantaError
 export const updateEstoque = async (id: number, quantidade: number): Promise<Result<Planta, PlantaErrors>> => {
     try {
         logger.info("trying to update Estoque");
-        const planta = await PlantaRepository.findPlantaById(id)
-        if (!planta) {
-            logger.error("Could not find a Planta with this Id " + id);
-            return err("NOT_FOUND")
-        }
-        if (planta.estoque < quantidade) {
+        const updatedPlanta = await PlantaRepository.decrementEstoquePlanta(id, quantidade);
+        if (updatedPlanta === null) {
+            const planta = await PlantaRepository.findPlantaById(id);
+            if (!planta) {
+                logger.error("Could not find a Planta with this Id " + id);
+                return err("NOT_FOUND")
+            }
             logger.error("Could not subtract stock");
             return err("INSUFFICIENT_STOCK");
-        }
-        const updatedPlanta = await PlantaRepository.updateEstoquePlanta(id, -quantidade);
-        if (updatedPlanta === null) {
-            logger.error("Could not find a Planta with this Id " + id);
-            return err("NOT_FOUND")
         }
         logger.info("Could update Estoque");
         return ok(updatedPlanta);
@@ -129,7 +128,7 @@ export const getResumoEstoque = async (): Promise<Result<{ valorTotalEmCentavos:
         logger.info("trying to get stock summary");
         const plantas = await PlantaRepository.findAllPlantas();
         const resumo = plantas.reduce((acumulado, planta) => ({
-                valorTotalEmCentavos: acumulado.valorTotalEmCentavos + planta.valor * planta.estoque,
+                valorTotalEmCentavos: acumulado.valorTotalEmCentavos + planta.preco * planta.estoque,
                 totalDeVasos: acumulado.totalDeVasos + planta.estoque,}),
                 { valorTotalEmCentavos: 0, totalDeVasos: 0 }
         );
